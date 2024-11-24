@@ -40,7 +40,7 @@ def fetch_related_companies(ticker, depth=3, seen=None):
 
         # Extract tickers from the related company objects
         for related in related_companies:
-            related_ticker = related.ticker  # Adjust if the attribute name is different
+            related_ticker = related.ticker
             if related_ticker not in seen:
                 seen.add(related_ticker)
                 # Recurse on the related ticker
