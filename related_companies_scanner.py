@@ -29,6 +29,7 @@ def fetch_related_companies(ticker, depth=3, seen=None):
     """
     if seen is None:
         seen = set()
+        seen.add(ticker)
 
     # Base case: Stop recursion if depth is 0
     if depth == 0:
