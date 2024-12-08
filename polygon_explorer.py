@@ -1,5 +1,8 @@
 from polygon import RESTClient
 import os
+from datetime import datetime, timedelta
+from collections import defaultdict
+import plotly.graph_objects as g
 
 # Ensure the POLYGON_API_KEY is set as an environment variable
 API_KEY = os.getenv("POLYGON_API_KEY")
@@ -10,6 +13,38 @@ if not API_KEY:
 # Initialize the RESTClient
 client = RESTClient(API_KEY)
 
+def generate_option_ticker(underlying, expiration, option_type, strike_price):
+    """
+    Generate an options ticker in the format used by Polygon.io.
+    """
+    expiration_formatted = expiration[2:].replace("-", "")
+    strike_price_formatted = f"{int(strike_price * 1000):08d}"
+    return f"O:{underlying.upper()}{expiration_formatted}{option_type.upper()}{strike_price_formatted}"
+
+def get_trades(ticker, days=20):
+    """
+    Fetch trades for the past N days and aggregate their sizes by date.
+
+    Args:
+        ticker (str): The option ticker.
+        days (int): Number of days to look back.
+
+    Returns:
+        dict: A dictionary with dates as keys and total trade size as values.
+    """
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    trades_by_day = defaultdict(int)
+
+    # Fetch trades from Polygon
+    for t in client.list_trades(ticker, timestamp_gt=start_date.strftime("%Y-%m-%d")):
+        # Convert SIP timestamp to a date
+        trade_date = datetime.utcfromtimestamp(
+            t.sip_timestamp / 1_000_000_000
+        ).strftime("%Y-%m-%d")
+        trades_by_day[trade_date] += t.size  # Aggregate trade size
+
+    return trades_by_day
 
 # Utility Functions
 def get_ticker_details(ticker):
@@ -99,7 +134,7 @@ Available utilities:
 2. `list_trades(ticker, days=1)`: Fetch recent trades for a ticker.
 3. `get_aggregates(ticker, multiplier=1, timespan="day", from_date, to_date)`: Fetch aggregate data for a ticker.
 4. `list_tickers(limit=10)`: Fetch a list of tickers.
-
+5. `generate_option_ticker(underlying, expiration, option_type, strike_price)
 Polygon Client is initialized as `client`.
 
 Example:

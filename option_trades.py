@@ -1,8 +1,38 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 from polygon import RESTClient
+import plotly.graph_objects as go
 
 client = RESTClient()  # POLYGON_API_KEY environment variable is used
+
+
+def visualize_trade_flows(ticker, trades_by_day):
+    """
+    Visualize the trade flows using Plotly.
+
+    Args:
+        trades_by_day (dict): Dictionary with dates as keys and total trade sizes as values.
+    """
+    # Prepare data for plotting
+    sorted_dates = sorted(trades_by_day.keys())
+    sizes = [trades_by_day[date] for date in sorted_dates]
+
+    # Create a Plotly bar chart
+    fig = go.Figure(data=[
+        go.Bar(x=sorted_dates, y=sizes, name="Trade Sizes")
+    ])
+
+    # Add layout details
+    fig.update_layout(
+        title=f"{ticker} Options Trade Flows (Last 20 Days)",
+        xaxis_title="Date",
+        yaxis_title="Total Trade Size",
+        xaxis=dict(tickangle=-45),
+        template="plotly_white"
+    )
+
+    # Display the chart
+    fig.show()
 
 
 def generate_option_ticker(underlying, expiration, option_type, strike_price):
@@ -40,9 +70,9 @@ def get_trades(ticker, days=20):
     return trades_by_day
 
 
-def analyze_size_spikes(trades_by_day):
+def analyze_size_spikes(ticker, trades_by_day):
     """
-    Analyze the aggregated trade sizes to detect spikes.
+    Analyze the aggregated trade sizes to detect spikes and visualize flows.
 
     Args:
         trades_by_day (dict): Dictionary with dates as keys and total trade sizes as values.
@@ -78,11 +108,14 @@ def analyze_size_spikes(trades_by_day):
     else:
         print(f"No significant spike detected.")
 
+    # Visualize trade flows
+    visualize_trade_flows(ticker, trades_by_day)
+
 
 def main(underlying, expiration, option_type, strike_price):
     ticker = generate_option_ticker(underlying, expiration, option_type, strike_price)
     trades_by_day = get_trades(ticker, days=20)
-    analyze_size_spikes(trades_by_day)
+    analyze_size_spikes(ticker, trades_by_day)
 
 
 if __name__ == "__main__":
