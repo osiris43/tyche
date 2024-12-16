@@ -122,7 +122,10 @@ def list_tickers(limit=10):
 def get_client():
     return client
 
-
+def get_date_from_sip(sip):
+  trade_date = datetime.utcfromtimestamp(sip / 1000).strftime("%Y-%m-%d")
+  print(trade_date)
+  
 # Display a welcome message
 def welcome_message():
     print(
