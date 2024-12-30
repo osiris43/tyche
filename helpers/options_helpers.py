@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 client = RESTClient()  # Ensure POLYGON_API_KEY is set in your environment
 
+
 def generate_option_ticker(underlying, expiration, option_type, strike_price):
     """
     Generate an options ticker in the format used by Polygon.io.
@@ -69,7 +70,7 @@ def get_last_trading_day():
         days_to_subtract = 3
         target_date = date_obj - timedelta(days=days_to_subtract)
     else:
-      days_to_subtract = 1
+      days_to_subtract = 1 
       target_date = date_obj - timedelta(days=days_to_subtract)
       # Otherwise, return the original date
     

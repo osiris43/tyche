@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta
 from collections import defaultdict
 import plotly.graph_objects as g
+import pandas as pd
 
 # Ensure the POLYGON_API_KEY is set as an environment variable
 API_KEY = os.getenv("POLYGON_API_KEY")
@@ -125,7 +126,36 @@ def get_client():
 def get_date_from_sip(sip):
   trade_date = datetime.utcfromtimestamp(sip / 1000).strftime("%Y-%m-%d")
   print(trade_date)
-  
+
+def get_trades_as_dataframe(ticker, strike, days=20):
+    """
+    Fetch trades for the past N days and return as a DataFrame.
+
+    Args:
+        ticker (str): The option ticker.
+        days (int): Number of days to look back.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing all trade data.
+    """
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+
+    # Fetch trades from Polygon
+    trades = []
+    for t in client.list_trades(ticker, timestamp_gt=start_date.strftime("%Y-%m-%d")):
+        trades.append({
+            "trade_date": datetime.utcfromtimestamp(t.sip_timestamp / 1_000_000_000).strftime("%Y-%m-%d"),
+            "price": t.price,
+            "size": t.size,
+            "strike_price": strike 
+        })
+
+    # Convert to DataFrame
+    df_trades = pd.DataFrame(trades)
+    return df_trades
+
+
 # Display a welcome message
 def welcome_message():
     print(
