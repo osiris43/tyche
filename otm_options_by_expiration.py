@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from polygon import RESTClient
 import plotly.graph_objects as go
-from helpers.options_helpers import get_last_trading_day 
+from helpers.options_helpers import get_last_trading_day, get_current_price 
 
 client = RESTClient()  # POLYGON_API_KEY environment variable is used
 
@@ -145,19 +145,6 @@ def get_friday_or_date():
     
     return target_date.strftime("%Y-%m-%d")
 
-
-# Helper function for fetching current stock price (pseudo-code)
-def get_current_price(ticker):
-    """
-    Fetch the current stock price for a ticker.
-    Replace this with an actual API call or logic.
-    """
-    d = get_last_trading_day()
-    print(d)
-    request = client.get_daily_open_close_agg(ticker, d)
-
-    return float(request.close)
-                 
 
 def get_trades_and_metrics_for_otm_calls(symbol, expiration, current_price, days=20):
     """
