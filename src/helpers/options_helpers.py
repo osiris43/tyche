@@ -12,6 +12,7 @@ def generate_option_ticker(underlying, expiration, option_type, strike_price):
     strike_price_formatted = f"{int(strike_price * 1000):08d}"
     return f"O:{underlying.upper()}{expiration_formatted}{option_type.upper()}{strike_price_formatted}"
 
+
 def fetch_related_companies(ticker, depth=3, seen=None):
     """
     Recursively fetch related companies up to the specified depth.
@@ -36,9 +37,13 @@ def fetch_related_companies(ticker, depth=3, seen=None):
     # Otherwise, hit the API (handle the case where API is down or empty response)
     try:
         related_companies = client.get_related_companies(ticker)
-        related_tickers = [related.ticker for related in related_companies]  # Adjust if structure differs
+        related_tickers = [
+            related.ticker for related in related_companies
+        ]  # Adjust if structure differs
 
-        print(f"Fetched {len(related_tickers)} related tickers for {ticker} from the API.")
+        print(
+            f"Fetched {len(related_tickers)} related tickers for {ticker} from the API."
+        )
         seen.update(related_tickers)
 
         # Recurse for each related ticker
@@ -52,6 +57,7 @@ def fetch_related_companies(ticker, depth=3, seen=None):
         print(f"Error fetching related companies for {ticker}: {e}")
         return seen
 
+
 def get_last_trading_day():
     # Convert the input string to a datetime object
     date_obj = datetime.now()
@@ -62,7 +68,7 @@ def get_last_trading_day():
 
     # Want the last trading day before this one.  S,S,M = F.  This is because
     # my polygon license doesn't allow for day of data.
-    if day_of_week in [5,6]:
+    if day_of_week in [5, 6]:
         # Calculate the number of days to subtract to reach the previous Friday
         days_to_subtract = day_of_week - 4
         target_date = date_obj - timedelta(days=days_to_subtract)
@@ -70,11 +76,12 @@ def get_last_trading_day():
         days_to_subtract = 3
         target_date = date_obj - timedelta(days=days_to_subtract)
     else:
-      days_to_subtract = 1 
-      target_date = date_obj - timedelta(days=days_to_subtract)
-      # Otherwise, return the original date
-    
+        days_to_subtract = 1
+        target_date = date_obj - timedelta(days=days_to_subtract)
+        # Otherwise, return the original date
+
     return target_date.strftime("%Y-%m-%d")
+
 
 # Helper function for fetching current stock price (pseudo-code)
 def get_current_price(ticker):
@@ -87,4 +94,49 @@ def get_current_price(ticker):
     request = client.get_daily_open_close_agg(ticker, d)
 
     return float(request.close)
-                 
+
+
+def get_contracts_by_underlying(underlying, expiration, percentage=1.0):
+    current_price = get_current_price(underlying)
+    print(f"Current Price: {current_price}")
+    otm_threshold = current_price * percentage
+    options = client.list_options_contracts(
+        underlying, contract_type="call", expiration_date=expiration
+    )
+
+    otm_calls = [opt for opt in options if opt.strike_price > otm_threshold]
+    print(f"Options Length: {len(otm_calls)}")
+
+    return otm_calls
+
+
+from datetime import datetime, timedelta
+
+
+def get_monthly_expirations():
+    """
+    Returns an array of dates (yyyy-mm-dd) for the third Friday of the next six months.
+
+    Returns:
+        list: List of date strings in yyyy-mm-dd format.
+    """
+    today = datetime.now()
+    monthly_expirations = []
+
+    for i in range(0, 8):  # Next 6 months
+        # Calculate the first day of the month
+        first_day_of_month = (today.replace(day=1) + timedelta(days=32 * i)).replace(
+            day=1
+        )
+
+        # Find the first Friday of the month
+        first_friday_offset = (4 - first_day_of_month.weekday()) % 7
+        first_friday = first_day_of_month + timedelta(days=first_friday_offset)
+
+        # Calculate the third Friday
+        third_friday = first_friday + timedelta(weeks=2)
+
+        # Format as yyyy-mm-dd and add to the list
+        monthly_expirations.append(third_friday.strftime("%Y-%m-%d"))
+
+    return monthly_expirations

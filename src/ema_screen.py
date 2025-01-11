@@ -1,7 +1,7 @@
 from polygon import RESTClient
 import os
 import time
-from helpers.options_helpers import fetch_related_companies  
+from helpers.options_helpers import fetch_related_companies
 from collections import defaultdict
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
@@ -16,8 +16,6 @@ if not API_KEY:
 client = RESTClient(API_KEY)
 
 
-client = RESTClient()  # POLYGON_API_KEY environment variable is used
-
 def fetch_option_volume(ticker, days=20):
     """
     Fetch options volume for the past N days and group by date.
@@ -27,15 +25,18 @@ def fetch_option_volume(ticker, days=20):
     option_flow = defaultdict(lambda: {"call": 0, "put": 0})
 
     for option in client.list_options_contracts(ticker):
-        for trade in client.list_trades(option.ticker, timestamp_gt=start_date.strftime("%Y-%m-%d")):
-            trade_date = datetime.utcfromtimestamp(trade.sip_timestamp / 1_000_000_000).strftime("%Y-%m-%d")
+        for trade in client.list_trades(
+            option.ticker, timestamp_gt=start_date.strftime("%Y-%m-%d")
+        ):
+            trade_date = datetime.utcfromtimestamp(
+                trade.sip_timestamp / 1_000_000_000
+            ).strftime("%Y-%m-%d")
             if option.contract_type.lower() == "call":
                 option_flow[trade_date]["call"] += trade.size
             elif option.contract_type.lower() == "put":
                 option_flow[trade_date]["put"] += trade.size
 
     return option_flow
-
 
 
 def detect_flow_spikes(option_flow):
@@ -47,8 +48,16 @@ def detect_flow_spikes(option_flow):
     historical_put_volumes = [option_flow[date]["put"] for date in dates[:-1]]
 
     # Calculate historical averages
-    avg_call_volume = sum(historical_call_volumes) / len(historical_call_volumes) if historical_call_volumes else 0
-    avg_put_volume = sum(historical_put_volumes) / len(historical_put_volumes) if historical_put_volumes else 0
+    avg_call_volume = (
+        sum(historical_call_volumes) / len(historical_call_volumes)
+        if historical_call_volumes
+        else 0
+    )
+    avg_put_volume = (
+        sum(historical_put_volumes) / len(historical_put_volumes)
+        if historical_put_volumes
+        else 0
+    )
 
     # Check for spikes in the latest day
     latest_date = dates[-1]
@@ -65,6 +74,7 @@ def detect_flow_spikes(option_flow):
         print(f"Significant option flow spike detected on {latest_date}!")
     else:
         print(f"No significant spikes detected.")
+
 
 def visualize_option_flows(option_flow, ticker):
     """
@@ -83,9 +93,10 @@ def visualize_option_flows(option_flow, ticker):
         xaxis_title="Date",
         yaxis_title="Volume",
         barmode="group",
-        template="plotly_white"
+        template="plotly_white",
     )
     fig.show()
+
 
 def analyze_option_flows(tickers):
     """
@@ -101,7 +112,7 @@ def analyze_option_flows(tickers):
 def is_ema_stacked(ticker):
     """
     Check if a ticker's EMAs are stacked in descending order.
-    
+
     Args:
         ticker (str): Stock ticker.
 
@@ -113,11 +124,7 @@ def is_ema_stacked(ticker):
 
     for window in ema_windows:
         ema = client.get_ema(
-            ticker=ticker,
-            timespan="day",
-            window=window,
-            series_type="close",
-            limit=1
+            ticker=ticker, timespan="day", window=window, series_type="close", limit=1
         )
         # Extract the most recent EMA value
         if ema:
@@ -133,10 +140,11 @@ def is_ema_stacked(ticker):
 
     return True
 
+
 def find_stacked_tickers(base_ticker):
     """
     Find related tickers with EMAs stacked in descending order.
-    
+
     Args:
         base_ticker (str): The base stock ticker.
 
@@ -147,8 +155,8 @@ def find_stacked_tickers(base_ticker):
 
     # Fetch related companies
     related_companies = fetch_related_companies(base_ticker, depth=2)
-    #related_companies = []
-    #related_companies.append(base_ticker)
+    # related_companies = []
+    # related_companies.append(base_ticker)
 
     for ticker in related_companies:
         print(f"Checking EMA stacking for {ticker}...")
@@ -160,13 +168,14 @@ def find_stacked_tickers(base_ticker):
 
     return stacked_tickers
 
-if __name__ == "__main__":
-  import argparse
 
-  parser = argparse.ArgumentParser(description="Search stocks for Ree's criteria")
-  parser.add_argument("symbol", type=str, help="Stock symbol (e.g., AAPL)")
- 
-  args = parser.parse_args()
-  stacked = find_stacked_tickers(args.symbol)
-  analyze_option_flows(stacked)
-  print("Tickers with stacked EMAs:", stacked)
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Search stocks for Ree's criteria")
+    parser.add_argument("symbol", type=str, help="Stock symbol (e.g., AAPL)")
+
+    args = parser.parse_args()
+    stacked = find_stacked_tickers(args.symbol)
+    analyze_option_flows(stacked)
+    print("Tickers with stacked EMAs:", stacked)
